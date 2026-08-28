@@ -1,0 +1,36 @@
+# ---- Java / Gradle ----
+.gradle/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+out/
+*.log
+
+# ---- IDE ----
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+nbproject/
+
+# ---- Node / React ----
+node_modules/
+dist/
+dist-ssr/
+*.local
+.eslintcache
+coverage/
+*.tsbuildinfo
+
+# ---- Env ----
+.env
+.env.*
+!.env.example
+!**/.env.development
+
+# ---- OS ----
+.DS_Store
+Thumbs.db

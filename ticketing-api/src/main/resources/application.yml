@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: ticketing-api
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:ticketing}?rewriteBatchedStatements=true&serverTimezone=UTC
+    username: ${DB_USER:ticketing}
+    password: ${DB_PASSWORD:ticketing}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      connection-timeout: 3000
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+server:
+  port: ${SERVER_PORT:8080}
+  tomcat:
+    threads:
+      max: 200
+    accept-count: 100
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.ticketing: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE

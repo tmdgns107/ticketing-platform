@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:tc:mysql:8.0:///ticketing?TC_REUSABLE=true
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
