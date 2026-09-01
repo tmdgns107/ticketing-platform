@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  api:
+    name: ticketing-api
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ticketing-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Build & unit test
+        run: ./gradlew build --no-daemon
+      - name: Integration tests (Testcontainers)
+        run: ./gradlew integrationTest --no-daemon
+
+  web:
+    name: ticketing-web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ticketing-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ticketing-web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build

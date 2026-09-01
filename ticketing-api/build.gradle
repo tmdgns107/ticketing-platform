@@ -83,6 +83,21 @@ tasks.named('clean') {
     delete generatedDir
 }
 
+// Fast tests only. Anything tagged "integration" (Testcontainers-backed) is split
+// into a separate task so `./gradlew build` stays green without a Docker daemon.
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'integration'
+    }
+}
+
+tasks.register('integrationTest', Test) {
+    description = 'Runs Testcontainers-backed integration tests (requires Docker).'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'integration'
+    }
+    shouldRunAfter tasks.named('test')
 }
