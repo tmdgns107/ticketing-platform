@@ -1,7 +1,6 @@
+# Datasource + Redis are supplied by Testcontainers @ServiceConnection
+# (see support/TestcontainersConfiguration).
 spring:
-  datasource:
-    url: jdbc:tc:mysql:8.0:///ticketing?TC_REUSABLE=true
-    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
   jpa:
     hibernate:
       ddl-auto: validate
@@ -9,10 +8,6 @@ spring:
     enabled: true
     # integration tests run against the same dev seed grid (schedule 1 -> 80 seats)
     locations: classpath:db/migration,classpath:db/seed
-  data:
-    redis:
-      host: localhost
-      port: 6379
 
 app:
   cors:
@@ -22,3 +17,9 @@ app:
     issuer: ticketing-platform
     access-token-ttl: PT30M
     refresh-token-ttl: P14D
+  reservation:
+    hold-duration: PT5M
+    default-lock-strategy: OPTIMISTIC
+    optimistic-max-attempts: 3
+    distributed-lock-ttl: PT3S
+    expiry-scan-interval: PT1H

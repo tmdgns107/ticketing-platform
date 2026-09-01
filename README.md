@@ -60,10 +60,30 @@ CI(GitHub Actions)는 두 태스크를 모두 실행한다.
 |--------|------|
 | `member` / `auth` | ✅ 회원가입 · 로그인 · 토큰 재발급 · `GET /members/me`. BCrypt + JWT(access/refresh) + `SecurityConfig` + `@CurrentMember` |
 | `performance` | ✅ 목록 / 단건 조회 (읽기 전용) |
-| `seat` | ⬜ 패키지 뼈대 |
-| `reservation` | ⬜ 패키지 뼈대 |
+| `seat` | ✅ Schedule/SeatGrade/Seat 스키마 + 좌석맵 조회 API |
+| `reservation` | ✅ 좌석 선점(3가지 락 전략) → 예매(PENDING) → confirm/cancel → 만료 스케줄러 |
 | `waitingqueue` | ⬜ 패키지 뼈대 |
 | `payment` | ⬜ 패키지 뼈대 |
+
+### 예매 API (인증 필요)
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| POST | `/api/v1/reservations` | 좌석 선점 → PENDING 예매 생성. `?lockStrategy=PESSIMISTIC\|OPTIMISTIC\|DISTRIBUTED` 로 전략 override (벤치마크용) |
+| GET | `/api/v1/reservations` | 내 예매 목록 |
+| GET | `/api/v1/reservations/{id}` | 예매 단건 (본인 것만) |
+| POST | `/api/v1/reservations/{id}/confirm` | 결제 확정 (좌석 SOLD) — 결제 도메인이 추후 래핑 |
+| POST | `/api/v1/reservations/{id}/cancel` | 예매 취소 (좌석 반환) |
+
+**락 전략 비교** (`domain/reservation/lock/`)
+
+| 전략 | 메커니즘 | 특징 |
+|------|----------|------|
+| `PESSIMISTIC` | `SELECT ... FOR UPDATE` | 경합 직렬화, 대기 발생, 확실 |
+| `OPTIMISTIC` | `@Version` + 재시도(최대 3회) | 락 없음, 경합 시 재시도 비용 |
+| `DISTRIBUTED` | Redis `SET NX` + Lua unlock | DB 락 없이 분산 환경 대응, Redis 의존 |
+
+24-thread 동시 요청 시 세 전략 모두 정확히 1건만 성공 (`ReservationConcurrencyIT`).
 
 ### 인증 API
 
@@ -79,8 +99,8 @@ CI(GitHub Actions)는 두 태스크를 모두 실행한다.
 ## 로드맵
 
 1. ~~`member` 인증 + JWT 필터 + SecurityConfig~~ ✅
-2. `seat` 스키마(V3) + 좌석맵 조회 API
-3. `reservation` 좌석 선점/예매 — 비관적 락 vs 낙관적 락 vs Redis 분산 락 벤치마크 ★
+2. ~~`seat` 스키마(V3) + 좌석맵 조회 API~~ ✅
+3. ~~`reservation` 좌석 선점/예매 — 비관적/낙관적/분산 락 3전략~~ ✅
 4. `waitingqueue` Redis ZSet 대기열 + 입장 토큰 인터셉터
 5. `payment` PG 모의 + Idempotency-Key + 미결제 자동 취소
 6. k6 부하 테스트 + 메트릭(Prometheus/Grafana)

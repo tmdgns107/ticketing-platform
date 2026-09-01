@@ -56,6 +56,13 @@ app:
     issuer: ticketing-platform
     access-token-ttl: ${JWT_ACCESS_TTL:PT30M}
     refresh-token-ttl: ${JWT_REFRESH_TTL:P14D}
+  reservation:
+    hold-duration: ${RESERVATION_HOLD_DURATION:PT5M}
+    # PESSIMISTIC | OPTIMISTIC | DISTRIBUTED — per-request override via ?lockStrategy=
+    default-lock-strategy: ${RESERVATION_LOCK_STRATEGY:OPTIMISTIC}
+    optimistic-max-attempts: 3
+    distributed-lock-ttl: PT3S
+    expiry-scan-interval: PT10S
 
 management:
   endpoints:

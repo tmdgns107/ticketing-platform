@@ -6,11 +6,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.junit.jupiter.api.Tag;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * Full-context integration test. Requires a Docker daemon (Testcontainers spins up
- * MySQL via the {@code jdbc:tc:} URL in {@code application-test.yml}).
+ * Full-context integration test. Requires a Docker daemon — Testcontainers starts MySQL and
+ * Redis (see {@link TestcontainersConfiguration}).
  *
  * <p>Excluded from the default {@code test} task; run with {@code ./gradlew integrationTest}.
  */
@@ -19,4 +20,5 @@ import org.springframework.test.context.ActiveProfiles;
 @Tag("integration")
 @ActiveProfiles("test")
 @SpringBootTest
+@Import(TestcontainersConfiguration.class)
 public @interface IntegrationTest {}
