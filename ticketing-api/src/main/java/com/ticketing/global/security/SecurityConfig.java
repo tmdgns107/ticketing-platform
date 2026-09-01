@@ -22,6 +22,7 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_GET = {
         "/api/v1/performances", "/api/v1/performances/**",
+        "/api/v1/schedules/*/seats",
         "/actuator/health/**", "/actuator/prometheus",
         "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**"
     };

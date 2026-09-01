@@ -7,6 +7,8 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
+    # integration tests run against the same dev seed grid (schedule 1 -> 80 seats)
+    locations: classpath:db/migration,classpath:db/seed
   data:
     redis:
       host: localhost

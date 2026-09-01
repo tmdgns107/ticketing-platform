@@ -24,10 +24,15 @@ public enum ErrorCode {
     // performance
     PERFORMANCE_NOT_FOUND(HttpStatus.NOT_FOUND, "공연 정보를 찾을 수 없습니다."),
 
-    // reservation / seat
+    // schedule / seat
+    SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "공연 회차를 찾을 수 없습니다."),
+    SEAT_NOT_FOUND(HttpStatus.NOT_FOUND, "좌석을 찾을 수 없습니다."),
     SEAT_ALREADY_HELD(HttpStatus.CONFLICT, "이미 선점된 좌석입니다."),
     SEAT_NOT_AVAILABLE(HttpStatus.CONFLICT, "예매할 수 없는 좌석입니다."),
     RESERVATION_EXPIRED(HttpStatus.GONE, "선점 시간이 만료되었습니다."),
+    RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "예매 정보를 찾을 수 없습니다."),
+    RESERVATION_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 예매가 아닙니다."),
+    SEAT_LOCK_CONFLICT(HttpStatus.CONFLICT, "다른 사용자가 좌석을 선점하고 있습니다. 다시 시도해주세요."),
 
     // waiting queue
     QUEUE_NOT_ALLOWED(HttpStatus.TOO_MANY_REQUESTS, "아직 입장 순서가 아닙니다."),
