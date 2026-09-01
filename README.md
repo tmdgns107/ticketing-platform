@@ -63,7 +63,18 @@ CI(GitHub Actions)는 두 태스크를 모두 실행한다.
 | `seat` | ✅ Schedule/SeatGrade/Seat 스키마 + 좌석맵 조회 API |
 | `reservation` | ✅ 좌석 선점(3가지 락 전략) → 예매(PENDING) → confirm/cancel → 만료 스케줄러 |
 | `waitingqueue` | ✅ Redis ZSet 대기열 + 승격 스케줄러 + 입장 토큰 인터셉터 |
-| `payment` | ⬜ 패키지 뼈대 |
+| `payment` | ✅ 모의 PG + Idempotency-Key 멱등 결제 + 예매 확정 연동 |
+
+### 결제 API (인증 필요)
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| POST | `/api/v1/payments` | `Idempotency-Key` 헤더 필수. `{reservationId}` 결제 → 성공 시 예매 CONFIRMED + 좌석 SOLD |
+| GET | `/api/v1/payments/{id}` | 결제 단건 |
+
+- 동일 `Idempotency-Key` 재요청 → 최초 결과를 재생(재청구 없음). 다른 요청에 재사용 → 409.
+- PG 호출은 짧은 트랜잭션 2개(준비/반영) 사이에서 수행. `app.payment.pg.failure-rate` 로 실패 시뮬레이션.
+- 미결제 자동 취소는 `reservation` 만료 스케줄러가 담당(PENDING + hold 만료 → 좌석 반환).
 
 ### 대기열 API (인증 필요)
 
@@ -113,5 +124,5 @@ ZSet 앞에서 `promote-batch-size` 명을 뽑아 TTL 기반 active 상태 + 입
 2. ~~`seat` 스키마(V3) + 좌석맵 조회 API~~ ✅
 3. ~~`reservation` 좌석 선점/예매 — 비관적/낙관적/분산 락 3전략~~ ✅
 4. ~~`waitingqueue` Redis ZSet 대기열 + 입장 토큰 인터셉터~~ ✅
-5. `payment` PG 모의 + Idempotency-Key + 미결제 자동 취소
+5. ~~`payment` PG 모의 + Idempotency-Key + 미결제 자동 취소~~ ✅
 6. k6 부하 테스트 + 메트릭(Prometheus/Grafana)

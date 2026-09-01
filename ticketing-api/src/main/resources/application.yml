@@ -70,6 +70,9 @@ app:
     promote-interval: PT3S
     active-ttl: PT5M
     entry-token-ttl: PT5M
+  payment:
+    pg:
+      failure-rate: ${PG_FAILURE_RATE:0.0}
 
 management:
   endpoints:

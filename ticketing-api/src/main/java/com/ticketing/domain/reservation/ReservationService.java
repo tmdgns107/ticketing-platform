@@ -75,6 +75,22 @@ public class ReservationService {
         return ReservationResponse.from(loadOwned(memberId, reservationId));
     }
 
+    /**
+     * Validates that {@code memberId} may pay for {@code reservationId} right now and returns the
+     * amount due. Used by the payment domain before it calls the PG.
+     */
+    @Transactional(readOnly = true)
+    public long amountDue(Long memberId, Long reservationId) {
+        Reservation reservation = loadOwned(memberId, reservationId);
+        if (!reservation.isPending()) {
+            throw new BusinessException(ErrorCode.RESERVATION_EXPIRED);
+        }
+        if (reservation.isExpired(clock.instant())) {
+            throw new BusinessException(ErrorCode.RESERVATION_EXPIRED);
+        }
+        return reservation.getPrice();
+    }
+
     @Transactional(readOnly = true)
     public List<ReservationResponse> getMine(Long memberId) {
         return reservationRepository.findByMemberIdOrderByIdDesc(memberId).stream()
