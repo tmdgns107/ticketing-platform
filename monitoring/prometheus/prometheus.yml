@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: ticketing-api
+    metrics_path: /actuator/prometheus
+    static_configs:
+      # host.docker.internal -> the API running on the host via `gradlew bootRun`
+      - targets: ['host.docker.internal:8080']

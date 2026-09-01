@@ -30,6 +30,7 @@ public class ReservationService {
     private final SeatRepository seatRepository;
     private final ScheduleRepository scheduleRepository;
     private final ReservationProperties properties;
+    private final ReservationMetrics metrics;
     private final Clock clock;
 
     public ReservationService(
@@ -38,12 +39,14 @@ public class ReservationService {
             SeatRepository seatRepository,
             ScheduleRepository scheduleRepository,
             ReservationProperties properties,
+            ReservationMetrics metrics,
             Clock clock) {
         seatHoldStrategies.forEach(s -> this.strategies.put(s.id(), s));
         this.reservationRepository = reservationRepository;
         this.seatRepository = seatRepository;
         this.scheduleRepository = scheduleRepository;
         this.properties = properties;
+        this.metrics = metrics;
         this.clock = clock;
     }
 
@@ -59,15 +62,30 @@ public class ReservationService {
         }
         LockStrategy chosen =
                 overrideStrategy != null ? overrideStrategy : properties.defaultLockStrategy();
-        Reservation reservation =
-                strategies.get(chosen).hold(memberId, request.scheduleId(), request.seatId());
-        log.info(
-                "reservation {} held via {} (member {}, seat {})",
-                reservation.getId(),
-                chosen,
-                memberId,
-                request.seatId());
-        return ReservationResponse.from(reservation);
+        long startedAt = System.nanoTime();
+        try {
+            Reservation reservation =
+                    strategies.get(chosen).hold(memberId, request.scheduleId(), request.seatId());
+            metrics.recordHold(chosen, "won", System.nanoTime() - startedAt);
+            log.info(
+                    "reservation {} held via {} (member {}, seat {})",
+                    reservation.getId(),
+                    chosen,
+                    memberId,
+                    request.seatId());
+            return ReservationResponse.from(reservation);
+        } catch (BusinessException e) {
+            metrics.recordHold(chosen, outcomeOf(e), System.nanoTime() - startedAt);
+            throw e;
+        }
+    }
+
+    private static String outcomeOf(BusinessException e) {
+        return switch (e.getErrorCode()) {
+            case SEAT_NOT_AVAILABLE, SEAT_ALREADY_HELD -> "taken";
+            case SEAT_LOCK_CONFLICT -> "lock_conflict";
+            default -> "error";
+        };
     }
 
     @Transactional(readOnly = true)

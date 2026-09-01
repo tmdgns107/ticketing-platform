@@ -6,9 +6,11 @@
 
 | 모듈 | 스택 | 설명 |
 |------|------|------|
-| `ticketing-api` | Java 21 · Spring Boot 3.5 · JPA + QueryDSL · Flyway · Redis | 백엔드 REST API |
+| `ticketing-api` | Java 21 · Spring Boot 3.5 · JPA + QueryDSL · Flyway · Redis · Micrometer | 백엔드 REST API |
 | `ticketing-web` | Node 22 · React 19 · Vite 7 · TypeScript · TanStack Query | 프론트엔드 SPA |
-| `docker-compose.yml` | MySQL 8 (호스트 13306) · Redis 7 (호스트 16379) | 로컬 인프라 — 네이티브 3306/6379와 충돌 방지 |
+| `docker-compose.yml` | MySQL 8 (호스트 13306) · Redis 7 (호스트 16379) · (opt) Prometheus + Grafana | 로컬 인프라 — 네이티브 3306/6379와 충돌 방지 |
+| `load/` | k6 시나리오 | 락 전략 벤치마크 · 온세일 러시 |
+| `monitoring/` | Prometheus · Grafana 프로비저닝 | `docker compose --profile monitoring up -d` |
 
 ## 빠른 시작
 
@@ -125,4 +127,21 @@ ZSet 앞에서 `promote-batch-size` 명을 뽑아 TTL 기반 active 상태 + 입
 3. ~~`reservation` 좌석 선점/예매 — 비관적/낙관적/분산 락 3전략~~ ✅
 4. ~~`waitingqueue` Redis ZSet 대기열 + 입장 토큰 인터셉터~~ ✅
 5. ~~`payment` PG 모의 + Idempotency-Key + 미결제 자동 취소~~ ✅
-6. k6 부하 테스트 + 메트릭(Prometheus/Grafana)
+6. ~~k6 부하 테스트 + 메트릭(Prometheus/Grafana)~~ ✅
+
+로드맵 6단계 완료. 이후: 캐시 계층(`@Cacheable` + Redis, 좌석맵), 리드 레플리카 datasource 분리,
+멀티 인스턴스 대응(대기열/만료 스케줄러 리더 선출 · ShedLock), 이벤트 기반 정산.
+
+## 부하 테스트 / 관측
+
+```bash
+docker compose --profile monitoring up -d     # Prometheus :9090 · Grafana :3000 (admin/admin)
+cd ticketing-api && ./gradlew bootRun
+k6 run -e STRATEGY=OPTIMISTIC load/k6/lock-benchmark.js
+```
+
+- API Prometheus: `http://localhost:8080/actuator/prometheus`
+- 핵심 지표: `ticketing_reservation_hold_seconds{strategy,outcome}` — 좌석 선점 시도의
+  전략별·결과별(`won`/`taken`/`lock_conflict`/`error`) 타이머·카운트
+- Grafana "Ticketing" 대시보드 자동 프로비저닝 (hold rate·p95, HTTP rate·p95, HikariCP, JVM heap)
+- 자세한 실행법은 [`load/README.md`](load/README.md)
