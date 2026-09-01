@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/ticketing?rewriteBatchedStatements=true&serverTimezone=UTC
+    url: jdbc:mysql://localhost:13306/ticketing?rewriteBatchedStatements=true&serverTimezone=UTC
     username: ticketing
     password: ticketing
   jpa:
@@ -12,7 +12,7 @@ spring:
   data:
     redis:
       host: localhost
-      port: 6379
+      port: 16379
   flyway:
     # `db/seed` holds repeatable dev-only fixtures; never added in prod profiles.
     locations: classpath:db/migration,classpath:db/seed

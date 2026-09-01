@@ -8,7 +8,7 @@
 |------|------|------|
 | `ticketing-api` | Java 21 · Spring Boot 3.5 · JPA + QueryDSL · Flyway · Redis | 백엔드 REST API |
 | `ticketing-web` | Node 22 · React 19 · Vite 7 · TypeScript · TanStack Query | 프론트엔드 SPA |
-| `docker-compose.yml` | MySQL 8 · Redis 7 | 로컬 인프라 |
+| `docker-compose.yml` | MySQL 8 (호스트 13306) · Redis 7 (호스트 16379) | 로컬 인프라 — 네이티브 3306/6379와 충돌 방지 |
 
 ## 빠른 시작
 
@@ -40,30 +40,47 @@ cd ticketing-api
 `@Tag("integration")` 이 붙은 테스트는 `test` 태스크에서 제외되고 `integrationTest` 로 분리된다.
 CI(GitHub Actions)는 두 태스크를 모두 실행한다.
 
-## 현재 상태 (틀만 잡힌 단계)
+> 로컬에서 `integrationTest` 는 Docker Engine 29 + Testcontainers 1.21.3 호환 문제로 실패할 수
+> 있다(코드 문제 아님, CI 는 정상). 로컬 검증은 `docker compose up -d` 후 `./gradlew bootRun` 으로
+> 실제 스택에 대해 수행한다.
 
-구현됨:
-- 공통 응답 포맷(`ApiResponse`), 전역 예외 처리 — 비즈니스 예외 / 검증 실패 / 타입 미스매치(400) /
-  라우트 없음(404) / 메서드 불가(405) 매핑
+## 현재 상태
+
+**공통 인프라**
+- 공통 응답 포맷(`ApiResponse`), 전역 예외 처리 — 비즈니스 예외 / 검증 실패(400) /
+  라우트 없음(404) / 메서드 불가(405) / 인증(401) / 권한(403) 매핑
 - 요청별 correlation-id 필터(`X-Request-Id`) + 접근 로그, JPA Auditing, Redis 템플릿, OpenAPI, CORS
-- 가상 스레드 활성화(`spring.threads.virtual.enabled`), HikariCP 튜닝, graceful shutdown
-- `performance` 도메인 수직 슬라이스: 엔티티 · 리포지토리 · 서비스 · 컨트롤러 · Flyway `V1__init.sql`
+- 가상 스레드 활성화, HikariCP 튜닝, graceful shutdown
 - 로컬 전용 시드(`db/seed/R__dev_seed.sql`, `local` 프로필에서만 로드)
-- 프론트: 라우팅, QueryClient, axios 클라이언트(토큰 주입 + 401 처리), 공연 목록/상세 페이지
-- CI: `.github/workflows/ci.yml` — api 빌드/테스트 + web lint/build
+- CI: `.github/workflows/ci.yml` — api 빌드/테스트/통합테스트 + web lint/build
 
-패키지만 잡아둔 도메인 (`package-info.java`에 책임 명시):
-- `member` — 가입/인증(JWT)
-- `waitingqueue` — Redis Sorted Set 기반 입장 대기열 + 승격 스케줄러
-- `seat` — 회차/좌석/등급, Redis 좌석 선점
-- `reservation` — 예매 상태 머신, 동시성 제어 비교, 만료 스케줄러
-- `payment` — PG 모의 연동, 멱등키 중복 결제 방지
+**도메인**
+
+| 도메인 | 상태 |
+|--------|------|
+| `member` / `auth` | ✅ 회원가입 · 로그인 · 토큰 재발급 · `GET /members/me`. BCrypt + JWT(access/refresh) + `SecurityConfig` + `@CurrentMember` |
+| `performance` | ✅ 목록 / 단건 조회 (읽기 전용) |
+| `seat` | ⬜ 패키지 뼈대 |
+| `reservation` | ⬜ 패키지 뼈대 |
+| `waitingqueue` | ⬜ 패키지 뼈대 |
+| `payment` | ⬜ 패키지 뼈대 |
+
+### 인증 API
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| POST | `/api/v1/auth/signup` | 회원가입 |
+| POST | `/api/v1/auth/login` | 로그인 → `{accessToken, refreshToken, tokenType, expiresIn}` |
+| POST | `/api/v1/auth/refresh` | refresh 토큰으로 재발급 |
+| GET | `/api/v1/members/me` | 현재 회원 (Bearer 필요) |
+
+공개 엔드포인트: `POST /auth/**`, `GET /performances/**`, `/actuator/health`, Swagger. 그 외는 인증 필요.
 
 ## 로드맵
 
-1. `member` 인증 + JWT 필터 + SecurityConfig
-2. `seat` 스키마(V2) + 좌석 조회 API
-3. `reservation` 좌석 선점/예매 — 비관적 락 vs 낙관적 락 vs Redis 분산 락 벤치마크
-4. `waitingqueue` 대기열 + 입장 토큰 인터셉터
-5. `payment` 멱등 결제 + 미결제 자동 취소 스케줄러
-6. k6 부하 테스트 시나리오, 리드 레플리카 / 캐시 계층 도입
+1. ~~`member` 인증 + JWT 필터 + SecurityConfig~~ ✅
+2. `seat` 스키마(V3) + 좌석맵 조회 API
+3. `reservation` 좌석 선점/예매 — 비관적 락 vs 낙관적 락 vs Redis 분산 락 벤치마크 ★
+4. `waitingqueue` Redis ZSet 대기열 + 입장 토큰 인터셉터
+5. `payment` PG 모의 + Idempotency-Key + 미결제 자동 취소
+6. k6 부하 테스트 + 메트릭(Prometheus/Grafana)

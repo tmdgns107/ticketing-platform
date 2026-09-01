@@ -50,6 +50,12 @@ server:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  jwt:
+    # Override in every real environment. Must be >= 32 bytes for HS256.
+    secret: ${JWT_SECRET:local-dev-insecure-secret-change-me-0123456789}
+    issuer: ticketing-platform
+    access-token-ttl: ${JWT_ACCESS_TTL:PT30M}
+    refresh-token-ttl: ${JWT_REFRESH_TTL:P14D}
 
 management:
   endpoints:

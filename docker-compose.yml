@@ -1,9 +1,12 @@
+# Host ports are deliberately non-standard (13306 / 16379) so these containers
+# don't collide with a native MySQL/Redis already running on 3306/6379.
+# Override with DB_HOST_PORT / REDIS_HOST_PORT if you prefer the defaults.
 services:
   mysql:
     image: mysql:8.0
     container_name: ticketing-mysql
     ports:
-      - "3306:3306"
+      - "${DB_HOST_PORT:-13306}:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: ticketing
@@ -24,7 +27,7 @@ services:
     image: redis:7-alpine
     container_name: ticketing-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_HOST_PORT:-16379}:6379"
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis-data:/data
