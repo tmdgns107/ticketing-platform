@@ -62,8 +62,19 @@ CI(GitHub Actions)는 두 태스크를 모두 실행한다.
 | `performance` | ✅ 목록 / 단건 조회 (읽기 전용) |
 | `seat` | ✅ Schedule/SeatGrade/Seat 스키마 + 좌석맵 조회 API |
 | `reservation` | ✅ 좌석 선점(3가지 락 전략) → 예매(PENDING) → confirm/cancel → 만료 스케줄러 |
-| `waitingqueue` | ⬜ 패키지 뼈대 |
+| `waitingqueue` | ✅ Redis ZSet 대기열 + 승격 스케줄러 + 입장 토큰 인터셉터 |
 | `payment` | ⬜ 패키지 뼈대 |
+
+### 대기열 API (인증 필요)
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| POST | `/api/v1/waiting-queue/{scheduleId}/enter` | 대기열 진입 → 순번 |
+| GET | `/api/v1/waiting-queue/{scheduleId}/status` | 순번 / 입장 여부 / `entryToken` |
+
+`app.waiting-queue.enforce=true` 이면 `POST /reservations` 는 승격으로 발급된
+`X-Queue-Token` 헤더를 요구한다(없으면 429). 스케줄러가 `promote-interval` 마다
+ZSet 앞에서 `promote-batch-size` 명을 뽑아 TTL 기반 active 상태 + 입장 토큰을 발급.
 
 ### 예매 API (인증 필요)
 
@@ -101,6 +112,6 @@ CI(GitHub Actions)는 두 태스크를 모두 실행한다.
 1. ~~`member` 인증 + JWT 필터 + SecurityConfig~~ ✅
 2. ~~`seat` 스키마(V3) + 좌석맵 조회 API~~ ✅
 3. ~~`reservation` 좌석 선점/예매 — 비관적/낙관적/분산 락 3전략~~ ✅
-4. `waitingqueue` Redis ZSet 대기열 + 입장 토큰 인터셉터
+4. ~~`waitingqueue` Redis ZSet 대기열 + 입장 토큰 인터셉터~~ ✅
 5. `payment` PG 모의 + Idempotency-Key + 미결제 자동 취소
 6. k6 부하 테스트 + 메트릭(Prometheus/Grafana)

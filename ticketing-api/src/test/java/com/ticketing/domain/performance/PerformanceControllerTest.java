@@ -11,14 +11,21 @@ import com.ticketing.global.error.ErrorCode;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import com.ticketing.global.config.WebConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 // addFilters = false: this slice verifies controller + advice serialisation, not the security chain.
-@WebMvcTest(PerformanceController.class)
+// WebConfig is excluded — it wires app-wide beans (queue interceptor, etc.) not relevant here.
+@WebMvcTest(
+    controllers = PerformanceController.class,
+    excludeFilters =
+        @Filter(type = FilterType.ASSIGNABLE_TYPE, classes = WebConfig.class))
 @AutoConfigureMockMvc(addFilters = false)
 class PerformanceControllerTest {
 

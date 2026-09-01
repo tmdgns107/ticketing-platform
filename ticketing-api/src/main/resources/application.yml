@@ -63,6 +63,13 @@ app:
     optimistic-max-attempts: 3
     distributed-lock-ttl: PT3S
     expiry-scan-interval: PT10S
+  waiting-queue:
+    # when true, POST /reservations requires a valid X-Queue-Token from queue promotion
+    enforce: ${QUEUE_ENFORCE:false}
+    promote-batch-size: ${QUEUE_PROMOTE_BATCH:50}
+    promote-interval: PT3S
+    active-ttl: PT5M
+    entry-token-ttl: PT5M
 
 management:
   endpoints:
